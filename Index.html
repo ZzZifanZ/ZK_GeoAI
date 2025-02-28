@@ -1,0 +1,784 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GIS Shapefile Visualizer</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css" />
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+        }
+        
+        body {
+            padding: 20px;
+            background-color: #f5f5f5;
+            color: #333;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        header {
+            margin-bottom: 20px;
+        }
+        
+        h1 {
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+        
+        .description {
+            color: #666;
+            margin-bottom: 20px;
+        }
+        
+        .app-container {
+            display: grid;
+            grid-template-columns: 300px 1fr;
+            gap: 20px;
+            background-color: #fff;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+        
+        @media (max-width: 800px) {
+            .app-container {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .sidebar {
+            background-color: #f8f9fa;
+            padding: 20px;
+            border-right: 1px solid #e9ecef;
+        }
+        
+        .upload-section {
+            margin-bottom: 20px;
+        }
+        
+        .upload-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: #343a40;
+        }
+        
+        .file-drop-area {
+            border: 2px dashed #ced4da;
+            border-radius: 6px;
+            padding: 30px 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-bottom: 15px;
+            position: relative;
+        }
+        
+        .file-drop-area:hover {
+            border-color: #6c63ff;
+            background-color: #f8f9ff;
+        }
+        
+        .file-drop-area.active {
+            border-color: #28a745;
+            background-color: #f0fff4;
+        }
+        
+        .file-input {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0;
+            cursor: pointer;
+        }
+        
+        .upload-icon {
+            font-size: 36px;
+            color: #6c63ff;
+            margin-bottom: 10px;
+        }
+        
+        .upload-text {
+            color: #6c757d;
+            margin-bottom: 5px;
+        }
+        
+        .upload-btn {
+            background-color: #6c63ff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            padding: 10px 16px;
+            font-size: 15px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            width: 100%;
+            margin-top: 10px;
+        }
+        
+        .upload-btn:hover {
+            background-color: #5a51d4;
+        }
+        
+        .upload-btn:disabled {
+            background-color: #ced4da;
+            cursor: not-allowed;
+        }
+        
+        .file-list {
+            margin-top: 15px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        
+        .file-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 12px;
+            background-color: #e9ecef;
+            border-radius: 4px;
+            margin-bottom: 5px;
+        }
+        
+        .file-name {
+            font-size: 14px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            max-width: 200px;
+        }
+        
+        .file-size {
+            font-size: 12px;
+            color: #6c757d;
+        }
+        
+        .style-section {
+            margin-bottom: 20px;
+        }
+        
+        .color-picker {
+            display: flex;
+            gap: 8px;
+            margin-top: 10px;
+            flex-wrap: wrap;
+        }
+        
+        .color-option {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            cursor: pointer;
+            border: 2px solid transparent;
+            transition: transform 0.2s;
+        }
+        
+        .color-option:hover {
+            transform: scale(1.1);
+        }
+        
+        .color-option.selected {
+            border-color: #343a40;
+        }
+        
+        .layers-section {
+            margin-bottom: 20px;
+        }
+        
+        .layer-list {
+            margin-top: 10px;
+            max-height: 150px;
+            overflow-y: auto;
+        }
+        
+        .layer-item {
+            display: flex;
+            align-items: center;
+            padding: 8px 12px;
+            background-color: #f8f9fa;
+            border-radius: 4px;
+            margin-bottom: 5px;
+        }
+        
+        .layer-color {
+            width: 16px;
+            height: 16px;
+            border-radius: 3px;
+            margin-right: 10px;
+        }
+        
+        .layer-checkbox {
+            margin-right: 8px;
+        }
+        
+        .status-message {
+            padding: 10px;
+            margin-top: 15px;
+            border-radius: 4px;
+            display: none;
+        }
+        
+        .status-message.success {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        
+        .status-message.error {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+        
+        .info-section {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid #dee2e6;
+        }
+        
+        .info-title {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+        
+        .info-text {
+            font-size: 14px;
+            color: #6c757d;
+            margin-bottom: 8px;
+        }
+        
+        .map-container {
+            height: 600px;
+            position: relative;
+        }
+        
+        #map {
+            height: 100%;
+            width: 100%;
+        }
+        
+        .map-control {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background-color: white;
+            padding: 5px;
+            border-radius: 4px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            z-index: 1000;
+        }
+        
+        .basemap-selector {
+            padding: 5px 10px;
+            border-radius: 3px;
+            border: 1px solid #ced4da;
+            background-color: white;
+            cursor: pointer;
+        }
+        
+        .feature-info {
+            position: absolute;
+            bottom: 10px;
+            left: 10px;
+            background-color: white;
+            padding: 10px;
+            border-radius: 4px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            z-index: 1000;
+            max-width: 300px;
+            max-height: 300px;
+            overflow-y: auto;
+            display: none;
+        }
+        
+        .feature-title {
+            font-weight: bold;
+            margin-bottom: 5px;
+            padding-bottom: 5px;
+            border-bottom: 1px solid #dee2e6;
+        }
+        
+        .properties-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        .properties-table td {
+            padding: 3px;
+            border-bottom: 1px solid #f1f1f1;
+            font-size: 13px;
+        }
+        
+        .properties-table tr td:first-child {
+            font-weight: 600;
+            width: 40%;
+        }
+        
+        .loading-spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(108, 99, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: #6c63ff;
+            animation: spin 1s ease-in-out infinite;
+            margin-right: 10px;
+            vertical-align: middle;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>GIS Shapefile Visualizer</h1>
+            <p class="description">Upload and visualize shapefiles on an interactive map</p>
+        </header>
+        
+        <div class="app-container">
+            <div class="sidebar">
+                <div class="upload-section">
+                    <h2 class="upload-title">Upload Shapefile</h2>
+                    <div class="file-drop-area" id="file-drop-area">
+                        <input type="file" id="file-input" class="file-input" multiple accept=".shp,.shx,.dbf">
+                        <div class="upload-icon">📁</div>
+                        <p class="upload-text">Drag &amp; drop files or click to browse</p>
+                        <p class="upload-text" style="font-size: 13px; opacity: 0.8;">Required: .shp, .shx, .dbf files</p>
+                    </div>
+                    
+                    <div class="file-list" id="file-list"></div>
+                    
+                    <button id="upload-button" class="upload-btn" disabled>Upload Shapefile</button>
+                    
+                    <div class="status-message" id="status-message"></div>
+                </div>
+                
+                <div class="style-section">
+                    <h2 class="upload-title">Style Options</h2>
+                    <p class="upload-text">Choose display color:</p>
+                    <div class="color-picker" id="color-picker">
+                        <div class="color-option selected" style="background-color: #3388ff;" data-color="#3388ff"></div>
+                        <div class="color-option" style="background-color: #ff5733;" data-color="#ff5733"></div>
+                        <div class="color-option" style="background-color: #33ff57;" data-color="#33ff57"></div>
+                        <div class="color-option" style="background-color: #5733ff;" data-color="#5733ff"></div>
+                        <div class="color-option" style="background-color: #ff33a8;" data-color="#ff33a8"></div>
+                        <div class="color-option" style="background-color: #33a8ff;" data-color="#33a8ff"></div>
+                        <div class="color-option" style="background-color: #a833ff;" data-color="#a833ff"></div>
+                        <div class="color-option" style="background-color: #ffc233;" data-color="#ffc233"></div>
+                    </div>
+                </div>
+                
+                <div class="layers-section">
+                    <h2 class="upload-title">Layers</h2>
+                    <div class="layer-list" id="layer-list">
+                        <p class="upload-text">No layers loaded yet</p>
+                    </div>
+                </div>
+                
+                <div class="info-section">
+                    <h3 class="info-title">About</h3>
+                    <p class="info-text">This application lets you visualize GIS shapefiles on an interactive map.</p>
+                    <p class="info-text">Upload a complete shapefile set (.shp, .shx, .dbf) to view geographic data.</p>
+                    <p class="info-text">Click on features to see their attributes.</p>
+                </div>
+            </div>
+            
+            <div class="map-container">
+                <div id="map"></div>
+                
+                <div class="map-control">
+                    <select id="basemap-selector" class="basemap-selector">
+                        <option value="osm">OpenStreetMap</option>
+                        <option value="satellite">Satellite</option>
+                        <option value="topo">Topographic</option>
+                    </select>
+                </div>
+                
+                <div class="feature-info" id="feature-info">
+                    <div class="feature-title">Feature Properties</div>
+                    <table class="properties-table" id="properties-table"></table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
+    <script>
+        // DOM Elements
+        const fileDropArea = document.getElementById('file-drop-area');
+        const fileInput = document.getElementById('file-input');
+        const fileList = document.getElementById('file-list');
+        const uploadButton = document.getElementById('upload-button');
+        const statusMessage = document.getElementById('status-message');
+        const colorPicker = document.getElementById('color-picker');
+        const layerList = document.getElementById('layer-list');
+        const basemapSelector = document.getElementById('basemap-selector');
+        const featureInfo = document.getElementById('feature-info');
+        const propertiesTable = document.getElementById('properties-table');
+        
+        // State variables
+        let selectedFiles = [];
+        let selectedColor = '#3388ff';
+        let layers = [];
+        let activeFeature = null;
+        
+        // Initialize map
+        const map = L.map('map').setView([0, 0], 2);
+        
+        // Base layers
+        const osmLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(map);
+        
+        const satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+            attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
+        });
+        
+        const topoLayer = L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
+            attribution: 'Map data: &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, <a href="http://viewfinderpanoramas.org">SRTM</a> | Map style: &copy; <a href="https://opentopomap.org">OpenTopoMap</a> (<a href="https://creativecommons.org/licenses/by-sa/3.0/">CC-BY-SA</a>)'
+        });
+        
+        const baseLayers = {
+            'osm': osmLayer,
+            'satellite': satelliteLayer,
+            'topo': topoLayer
+        };
+        
+        // Event Listeners
+        // Drag and drop
+        fileDropArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            fileDropArea.classList.add('active');
+        });
+        
+        fileDropArea.addEventListener('dragleave', () => {
+            fileDropArea.classList.remove('active');
+        });
+        
+        fileDropArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            fileDropArea.classList.remove('active');
+            
+            if (e.dataTransfer.files.length > 0) {
+                handleFiles(e.dataTransfer.files);
+            }
+        });
+        
+        // File input change
+        fileInput.addEventListener('change', () => {
+            if (fileInput.files.length > 0) {
+                handleFiles(fileInput.files);
+            }
+        });
+        
+        // Upload button click
+        uploadButton.addEventListener('click', uploadShapefile);
+        
+        // Color picker
+        colorPicker.addEventListener('click', (e) => {
+            if (e.target.classList.contains('color-option')) {
+                const colorOptions = document.querySelectorAll('.color-option');
+                colorOptions.forEach(option => option.classList.remove('selected'));
+                
+                e.target.classList.add('selected');
+                selectedColor = e.target.getAttribute('data-color');
+            }
+        });
+        
+        // Basemap selector
+        basemapSelector.addEventListener('change', () => {
+            const selectedBasemap = basemapSelector.value;
+            
+            // Remove all base layers
+            map.removeLayer(osmLayer);
+            map.removeLayer(satelliteLayer);
+            map.removeLayer(topoLayer);
+            
+            // Add the selected base layer
+            map.addLayer(baseLayers[selectedBasemap]);
+        });
+        
+        // Map click to clear selection
+        map.on('click', () => {
+            featureInfo.style.display = 'none';
+            
+            if (activeFeature) {
+                layers.forEach(layerInfo => {
+                    layerInfo.layer.resetStyle(activeFeature);
+                });
+                activeFeature = null;
+            }
+        });
+        
+        // Functions
+        function handleFiles(files) {
+            // Reset selection
+            selectedFiles = [];
+            fileList.innerHTML = '';
+            
+            let hasShp = false;
+            let hasShx = false;
+            let hasDbf = false;
+            
+            for (let i = 0; i < files.length; i++) {
+                const file = files[i];
+                const extension = file.name.split('.').pop().toLowerCase();
+                
+                if (['shp', 'shx', 'dbf'].includes(extension)) {
+                    selectedFiles.push(file);
+                    
+                    if (extension === 'shp') hasShp = true;
+                    if (extension === 'shx') hasShx = true;
+                    if (extension === 'dbf') hasDbf = true;
+                    
+                    // Create file item in the list
+                    const fileItem = document.createElement('div');
+                    fileItem.className = 'file-item';
+                    
+                    const fileName = document.createElement('div');
+                    fileName.className = 'file-name';
+                    fileName.textContent = file.name;
+                    
+                    const fileSize = document.createElement('div');
+                    fileSize.className = 'file-size';
+                    fileSize.textContent = formatFileSize(file.size);
+                    
+                    fileItem.appendChild(fileName);
+                    fileItem.appendChild(fileSize);
+                    fileList.appendChild(fileItem);
+                }
+            }
+            
+            // Check if we have all required files
+            const isComplete = hasShp && hasShx && hasDbf;
+            
+            if (!isComplete) {
+                const missingFiles = [];
+                if (!hasShp) missingFiles.push('.shp');
+                if (!hasShx) missingFiles.push('.shx');
+                if (!hasDbf) missingFiles.push('.dbf');
+                
+                const warningItem = document.createElement('div');
+                warningItem.className = 'file-item';
+                warningItem.style.color = '#dc3545';
+                warningItem.style.backgroundColor = '#f8d7da';
+                warningItem.textContent = `Missing: ${missingFiles.join(', ')}`;
+                fileList.appendChild(warningItem);
+            }
+            
+            uploadButton.disabled = !isComplete;
+        }
+        
+        function formatFileSize(bytes) {
+            if (bytes < 1024) return bytes + ' bytes';
+            else if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
+            else return (bytes / 1048576).toFixed(1) + ' MB';
+        }
+        
+        async function uploadShapefile() {
+            // Show loading message
+            statusMessage.innerHTML = '<span class="loading-spinner"></span> Uploading shapefile...';
+            statusMessage.className = 'status-message';
+            statusMessage.style.display = 'block';
+            uploadButton.disabled = true;
+            
+            try {
+                const formData = new FormData();
+                
+                // Add all files to FormData
+                for (const file of selectedFiles) {
+                    formData.append('files', file);
+                }
+                
+                // Send files to backend
+                const response = await fetch('http://127.0.0.1:8000/upload/', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    // Check if the response contains an error
+                    if (data.error) {
+                        throw new Error(data.error);
+                    }
+                    
+                    // Success - add layer to map
+                    statusMessage.className = 'status-message success';
+                    statusMessage.textContent = 'Shapefile loaded successfully!';
+                    
+                    // Parse GeoJSON (if it's a string) or use the object directly
+                    const geojsonData = typeof data === 'string' ? JSON.parse(data) : data;
+                    
+                    // Add layer to map
+                    addGeoJsonLayer(geojsonData);
+                    
+                    // Clear file selection
+                    selectedFiles = [];
+                    fileList.innerHTML = '';
+                    fileInput.value = '';
+                } else {
+                    throw new Error(data.error || 'Failed to upload shapefile');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                statusMessage.className = 'status-message error';
+                statusMessage.textContent = `Error: ${error.message}`;
+            } finally {
+                uploadButton.disabled = false;
+                
+                // Hide status message after 5 seconds
+                setTimeout(() => {
+                    statusMessage.style.display = 'none';
+                }, 5000);
+            }
+        }
+        
+        function addGeoJsonLayer(geojsonData) {
+            // Create a unique name for the layer
+            const layerName = `Layer ${layers.length + 1}`;
+            
+            // Create GeoJSON layer
+            const geoJsonLayer = L.geoJSON(geojsonData, {
+                style: {
+                    color: selectedColor,
+                    weight: 2,
+                    opacity: 1,
+                    fillOpacity: 0.3
+                },
+                onEachFeature: (feature, layer) => {
+                    // Add click event to show properties
+                    layer.on('click', (e) => {
+                        L.DomEvent.stopPropagation(e);
+                        
+                        // Reset style of previous selection
+                        if (activeFeature) {
+                            geoJsonLayer.resetStyle(activeFeature);
+                        }
+                        
+                        // Highlight the selected feature
+                        layer.setStyle({
+                            weight: 4,
+                            color: '#555',
+                            fillOpacity: 0.7
+                        });
+                        
+                        activeFeature = layer;
+                        
+                        // Show properties
+                        showFeatureProperties(feature.properties);
+                    });
+                }
+            }).addTo(map);
+            
+            // Fit map to layer bounds
+            if (geoJsonLayer.getBounds().isValid()) {
+                map.fitBounds(geoJsonLayer.getBounds());
+            }
+            
+            // Store layer info
+            layers.push({
+                id: Date.now(),
+                name: layerName,
+                color: selectedColor,
+                layer: geoJsonLayer,
+                visible: true
+            });
+            
+            // Update layer list
+            updateLayerList();
+        }
+        
+        function updateLayerList() {
+            // Clear current list
+            layerList.innerHTML = '';
+            
+            if (layers.length === 0) {
+                const noLayers = document.createElement('p');
+                noLayers.className = 'upload-text';
+                noLayers.textContent = 'No layers loaded yet';
+                layerList.appendChild(noLayers);
+                return;
+            }
+            
+            // Add each layer to the list
+            layers.forEach(layerInfo => {
+                const layerItem = document.createElement('div');
+                layerItem.className = 'layer-item';
+                
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.className = 'layer-checkbox';
+                checkbox.checked = layerInfo.visible;
+                checkbox.addEventListener('change', () => {
+                    toggleLayerVisibility(layerInfo.id, checkbox.checked);
+                });
+                
+                const colorSwatch = document.createElement('div');
+                colorSwatch.className = 'layer-color';
+                colorSwatch.style.backgroundColor = layerInfo.color;
+                
+                const layerName = document.createElement('span');
+                layerName.textContent = layerInfo.name;
+                
+                layerItem.appendChild(checkbox);
+                layerItem.appendChild(colorSwatch);
+                layerItem.appendChild(layerName);
+                
+                layerList.appendChild(layerItem);
+            });
+        }
+        
+        function toggleLayerVisibility(layerId, visible) {
+            const layerInfo = layers.find(layer => layer.id === layerId);
+            
+            if (layerInfo) {
+                layerInfo.visible = visible;
+                
+                if (visible) {
+                    map.addLayer(layerInfo.layer);
+                } else {
+                    map.removeLayer(layerInfo.layer);
+                }
+            }
+        }
+        
+        function showFeatureProperties(properties) {
+            // Clear previous properties
+            propertiesTable.innerHTML = '';
+            
+            // Add each property to the table
+            for (const key in properties) {
+                const row = document.createElement('tr');
+                
+                const keyCell = document.createElement('td');
+                keyCell.textContent = key;
+                
+                const valueCell = document.createElement('td');
+                valueCell.textContent = properties[key];
+                
+                row.appendChild(keyCell);
+                row.appendChild(valueCell);
+                propertiesTable.appendChild(row);
+            }
+            
+            // Show the feature info panel
+            featureInfo.style.display = 'block';
+        }
+    </script>
+</body>
+</html>
