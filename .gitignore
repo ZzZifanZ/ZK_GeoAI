@@ -1,0 +1,22 @@
+# Node.js dependencies
+shapfile-uploader/node_modules/
+venv
+
+# Build output
+build/
+dist/
+
+# OS-specific files
+.DS_Store   # macOS
+Thumbs.db   # Windows
+
+# Environment variables
+.env
+
+# Log files
+*.log
+
+# IDE or Editor configurations
+.vscode/
+.idea/
+.

@@ -1,19 +1,20 @@
 from fastapi import FastAPI, File, UploadFile
 import shutil
 import geopandas as gpd
+import json
 from pathlib import Path
 from fastapi.responses import JSONResponse
-from fastapi.middleware.cors import CORSMiddleware  # Import CORS middleware
+from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI()
 
-# Add CORS middleware to allow all origins (you can specify particular origins if needed)
+# Add CORS middleware to allow all origins
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # You can specify a list of origins here if needed (e.g., ["http://localhost:3000"])
+    allow_origins=["*"],
     allow_credentials=True,
-    allow_methods=["*"],  # Allow all HTTP methods
-    allow_headers=["*"],  # Allow all headers
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 UPLOAD_DIR = Path("uploads")
@@ -27,16 +28,16 @@ def read_root():
 async def upload_shapefiles(files: list[UploadFile] = File(...)):
     file_dict = {}
 
-    # Organize files by their extensions (e.g., .shp, .shx, .dbf)
+    # Organize files by their extensions
     for file in files:
         file_extension = file.filename.split('.')[-1]
         if file_extension not in file_dict:
             file_dict[file_extension] = []
         file_dict[file_extension].append(file)
     
-    # Ensure all required file types (.shp, .shx, .dbf) are present
+    # Ensure all required file types are present
     required_file_types = ['shp', 'shx', 'dbf']
-    missing_files = [f"{file}.shp" for file in required_file_types if file not in file_dict]
+    missing_files = [f"{file}" for file in required_file_types if file not in file_dict]
     
     if missing_files:
         return {"error": f"Missing shapefile components: {', '.join(missing_files)}"}
@@ -54,9 +55,17 @@ async def upload_shapefiles(files: list[UploadFile] = File(...)):
         shp_file_location = UPLOAD_DIR / shp_file.filename
         gdf = gpd.read_file(shp_file_location)
 
-        # Convert GeoDataFrame to GeoJSON
-        geojson_data = gdf.to_json()
-
-        return JSONResponse(content=geojson_data)
+        # Convert GeoDataFrame to GeoJSON - ensure it's a proper GeoJSON structure
+        geojson_data = json.loads(gdf.to_json())
+        
+        # Make sure we have a valid GeoJSON structure
+        if "type" not in geojson_data or "features" not in geojson_data:
+            # Create a proper GeoJSON structure if it's missing
+            geojson_data = {
+                "type": "FeatureCollection",
+                "features": geojson_data if isinstance(geojson_data, list) else []
+            }
+        
+        return geojson_data
     except Exception as e:
-        return {"error": str(e)}
+        return {"error": f"Error processing shapefile: {str(e)}"}
