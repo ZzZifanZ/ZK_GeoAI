@@ -9,6 +9,7 @@ import Sidebar from './components/Sidebar.jsx';
 import MapControls from './components/Mapcontrol.jsx';
 import L from 'leaflet';
 import FeatureInfo from './components/FeatureInfo.jsx';
+import GeoCommandWindow from './components/GeoCommandWindow.jsx';
 
 const App = () => {
   // State variables
@@ -28,29 +29,32 @@ const App = () => {
     let hasShp = false;
     let hasShx = false;
     let hasDbf = false;
+    let hasPrj = false;
     
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
       const extension = file.name.split('.').pop().toLowerCase();
       
-      if (['shp', 'shx', 'dbf'].includes(extension)) {
+      if (['shp', 'shx', 'dbf','prj'].includes(extension)) {
         newSelectedFiles.push(file);
         
         if (extension === 'shp') hasShp = true;
         if (extension === 'shx') hasShx = true;
         if (extension === 'dbf') hasDbf = true;
+        if (extension === 'prj') hasPrj = true;
       }
     }
     
     setSelectedFiles(newSelectedFiles);
-    return { isComplete: hasShp && hasShx && hasDbf, missingFiles: getMissingFiles(hasShp, hasShx, hasDbf) };
+    return { isComplete: hasShp && hasShx && hasDbf && hasPrj, missingFiles: getMissingFiles(hasShp, hasShx, hasDbf,hasPrj) };
   };
   
-  const getMissingFiles = (hasShp, hasShx, hasDbf) => {
+  const getMissingFiles = (hasShp, hasShx, hasDbf,hasPrj) => {
     const missingFiles = [];
     if (!hasShp) missingFiles.push('.shp');
     if (!hasShx) missingFiles.push('.shx');
     if (!hasDbf) missingFiles.push('.dbf');
+    if (!hasDbf) missingFiles.push('.prj');
     return missingFiles;
   };
   
@@ -143,6 +147,50 @@ const App = () => {
     setLayers(prevLayers => [...prevLayers, newLayer]);
   };
   
+  // Handle command result
+  const handleCommandResult = (geojsonData) => {
+        if (!geojsonData) return;
+      
+      // Create a meaningful name based on the geometry type
+      let layerName = "Command Result";
+      
+      if (geojsonData.features && geojsonData.features.length > 0) {
+        const geometryType = geojsonData.features[0].geometry.type;
+        layerName = `${geometryType} Result ${layers.length + 1}`;
+      }
+      
+      // Create new layer with a different color than the default
+      const newLayer = {
+        id: Date.now(),
+        name: layerName,
+        color: '#FF4500', // Use a distinctive color for results
+        data: geojsonData,
+        visible: true,
+        isCommandResult: true // Flag to identify command results
+      };
+      
+      // Add to layers
+      setLayers(prevLayers => [...prevLayers, newLayer]);
+      
+      // Notify user
+      setStatusMessage({
+        text: 'Command executed and result visualized on map!',
+        type: 'success',
+        visible: true
+      });
+      
+      setTimeout(() => {
+        setStatusMessage(prev => ({ ...prev, visible: false }));
+      }, 5000);
+      
+      // If it's a single point, you might want to add a marker instead of a polygon
+      if (geojsonData.features && 
+          geojsonData.features.length === 1 && 
+          geojsonData.features[0].geometry.type === 'Point') {
+        // The map will fit to this point because of your MapUpdater component
+      }
+  };
+  
   // Toggle layer visibility
   const toggleLayerVisibility = (layerId, visible) => {
     setLayers(prevLayers => 
@@ -227,19 +275,13 @@ const App = () => {
       };
     }
   };
+  
   const whiteMarkerIcon = L.divIcon({
     className: 'leaflet-div-icon', // Ensures it uses a div element for styling
     html: '<div style="background-color: white; border-radius: 50%; width: 20px; height: 20px; border: 2px solid #333;"></div>',
     iconSize: [20, 20],  // Adjust size as needed
     iconAnchor: [10, 10], // Center the icon on the marker
   });
-  // Custom Marker Icon for Point Features
-  /*const customMarkerIcon = new L.Icon({
-    iconUrl: '/marker-icon.png', // Path to your custom icon (placed in public folder)
-    iconSize: [25, 25], // Set icon size
-    iconAnchor: [12, 25], // Set anchor point for the icon
-    popupAnchor: [0, -25], // Position the popup relative to the icon
-  });*/
 
   return (
     <div className="container">
@@ -296,40 +338,56 @@ const App = () => {
                 style={(feature) => getLayerStyle(
                   feature,
                   null,
-                  activeFeature && activeFeature.layerId === layer.id,
+                  activeFeature && activeFeature.layerId === layer.id && 
+                    activeFeature.featureId === (feature.id || feature.properties.id),
                   layer.color
                 )}
-                pointToLayer={(feature, latlng) => {
-                  if (feature.geometry.type === 'Point') {
-                    // Return custom marker for point features
-                    return L.marker(latlng, { icon: whiteMarkerIcon });
-                  }
-                  // Return default GeoJSON layer for other features
-                  return L.geoJSON(feature, { style: getLayerStyle(feature, null, false, layer.color) });
-                }}
                 onEachFeature={(feature, leafletLayer) => {
                   leafletLayer.on({
                     click: (e) => {
-                      // Stop propagation to prevent map click
-                      L.DomEvent.stopPropagation(e);
                       onFeatureClick(e, layer.id);
+                      L.DomEvent.stopPropagation(e);
                     }
                   });
                 }}
+
+                pointToLayer={(feature, latlng) => {
+                  // Check if the feature is a Point
+                  if (feature.geometry.type === 'Point') {
+                    return L.marker(latlng, { icon: whiteMarkerIcon }); // Use the whiteMarkerIcon
+                  } 
+                }}
+
+
+
               />
-            ))}
+
+
+
+              ))}
+              
+              <MapUpdater layers={layers} activeFeature={activeFeature} />
+              <MapControls setBasemap={setBasemap} currentBasemap={basemap} />
+            </MapContainer>
             
-            <MapUpdater layers={layers} activeFeature={activeFeature} />
-            <MapControls basemap={basemap} setBasemap={setBasemap} />
-          </MapContainer>
+            {activeProperties && (
+              <FeatureInfo 
+                properties={activeProperties} 
+                onClose={() => {
+                  setActiveFeature(null);
+                  setActiveProperties(null);
+                }} 
+              />
+            )}
+          </div>
           
-          {activeProperties && (
-            <FeatureInfo properties={activeProperties} />
-          )}
+          <GeoCommandWindow 
+            layers={layers}
+            onCommandResult={handleCommandResult}
+          />
         </div>
       </div>
-    </div>
-  );
-};
-
-export default App;
+    );
+  };
+  
+  export default App;

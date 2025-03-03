@@ -60,13 +60,13 @@ const Sidebar = ({
             ref={fileInputRef}
             className="file-input" 
             multiple 
-            accept=".shp,.shx,.dbf"
+            accept=".shp,.shx,.dbf,.prj"
             onChange={onFilesSelected}
           />
           <div className="upload-icon">📁</div>
           <p className="upload-text">Drag &amp; drop files or click to browse</p>
           <p className="upload-text" style={{ fontSize: '13px', opacity: 0.8 }}>
-            Required: .shp, .shx, .dbf files
+            Required: .shp, .shx, .dbf, .prj files
           </p>
         </div>
         
