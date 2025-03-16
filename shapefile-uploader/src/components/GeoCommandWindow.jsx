@@ -25,7 +25,7 @@ const GeoCommandWindow = ({ onCommandResult }) => {
     
     try {
       // Send command to backend
-      const response = await fetch('http://127.0.0.1:8000/execute-command/', {
+      const response = await fetch('https://zk-geoai.onrender.com/execute-command/', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
