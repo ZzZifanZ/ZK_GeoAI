@@ -16,7 +16,7 @@ import GeoAICommandWindow from './components/GeoAICommandWindow.jsx';
 import GeoCommandWindow from './components/GeoCommandWindow.jsx';
 
 
-const APIBASE_URL = process.env.API_BASE_URL;
+const APIBASE_URL = process.env.REACT_APP_API_BASE_UR;
 const App = () => {
   // State variables
   const [selectedFiles, setSelectedFiles] = useState([]);
