@@ -107,7 +107,7 @@ const App = () => {
       }
       
       // Send files to backend
-      const response = await fetch('API_BASE_URL', {
+      const response = await fetch(API_BASE_URL, {
         method: 'POST',
         body: formData
       });
