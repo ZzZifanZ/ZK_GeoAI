@@ -14,6 +14,8 @@ import LayerStyleModal from './components/LayerStyleModal.jsx';
 import FeatureInfo from './components/FeatureInfo.jsx';
 import GeoAICommandWindow from './components/GeoAICommandWindow.jsx';
 import GeoCommandWindow from './components/GeoCommandWindow.jsx';
+
+
 const APIBASE_URL = process.env.API_BASE_URL;
 const App = () => {
   // State variables
@@ -111,7 +113,7 @@ const App = () => {
         method: 'POST',
         body: formData
       });
-      
+      console.log(APIBASE_URL)
       const data = await response.json();
       
       if (response.ok) {
