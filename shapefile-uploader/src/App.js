@@ -14,7 +14,7 @@ import LayerStyleModal from './components/LayerStyleModal.jsx';
 import FeatureInfo from './components/FeatureInfo.jsx';
 import GeoAICommandWindow from './components/GeoAICommandWindow.jsx';
 import GeoCommandWindow from './components/GeoCommandWindow.jsx';
-const API_BASE_URL = "https://zk-geoai.onrender.com";
+const APIBASE_URL = process.env.API_BASE_URL;
 const App = () => {
   // State variables
   const [selectedFiles, setSelectedFiles] = useState([]);
@@ -107,7 +107,7 @@ const App = () => {
       }
       
       // Send files to backend
-      const response = await fetch('https://zk-geoai.onrender.com/upload/', {
+      const response = await fetch(`${APIBASE_URL}/upload/`, {
         method: 'POST',
         body: formData
       });
