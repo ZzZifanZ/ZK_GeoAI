@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import axios from 'axios';
-const APIBASE_URL = process.env.API_BASE_URL;
+const APIBASE_URL = process.env.REACT_APP_API_BASE_URL;
 const GeoAICommandWindow = ({ layers, onCommandResult }) => {
   const [query, setQuery] = useState('');
   const [history, setHistory] = useState([]);

@@ -17,6 +17,7 @@ import GeoCommandWindow from './components/GeoCommandWindow.jsx';
 
 
 const APIBASE_URL = process.env.REACT_APP_API_BASE_URL;
+
 const App = () => {
   // State variables
   const [selectedFiles, setSelectedFiles] = useState([]);
@@ -107,7 +108,7 @@ const App = () => {
       for (const file of selectedFiles) {
         formData.append('files', file);
       }
-      
+      console.log(`${APIBASE_URL}/upload/`)
       // Send files to backend
       const response = await fetch(`${APIBASE_URL}/upload/`, {
         method: 'POST',
