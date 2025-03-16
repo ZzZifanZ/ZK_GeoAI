@@ -107,7 +107,7 @@ const App = () => {
       }
       
       // Send files to backend
-      const response = await fetch(API_BASE_URL, {
+      const response = await fetch('https://zk-geoai.onrender.com/upload/', {
         method: 'POST',
         body: formData
       });
