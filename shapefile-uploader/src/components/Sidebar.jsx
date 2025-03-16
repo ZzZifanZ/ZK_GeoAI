@@ -10,7 +10,9 @@ const Sidebar = ({
   setSelectedColor,
   layers,
   toggleLayerVisibility,
-  statusMessage
+  statusMessage,
+  setEditingLayerId,
+  updateLayerColor={updateLayerColor} 
 }) => {
   const [isComplete, setIsComplete] = useState(false);
   const [missingFiles, setMissingFiles] = useState([]);
@@ -24,7 +26,8 @@ const Sidebar = ({
       setMissingFiles(result.missingFiles);
     }
   };
-  
+
+
   const handleDragOver = (e) => {
     e.preventDefault();
     e.currentTarget.classList.add('active');
@@ -100,24 +103,7 @@ const Sidebar = ({
           </div>
         )}
       </div>
-      
-      <div className="style-section">
-        <h2 className="upload-title">Style Options</h2>
-        <p className="upload-text">Choose display color:</p>
-        <div className="color-picker">
-          {[
-            '#3388ff', '#ff5733', '#33ff57', '#5733ff', 
-            '#ff33a8', '#33a8ff', '#a833ff', '#ffc233'
-          ].map(color => (
-            <div 
-              key={color}
-              className={`color-option ${selectedColor === color ? 'selected' : ''}`} 
-              style={{ backgroundColor: color }} 
-              onClick={() => handleColorSelect(color)}
-            />
-          ))}
-        </div>
-      </div>
+    
       
       <div className="layers-section">
         <h2 className="upload-title">Layers</h2>
@@ -136,8 +122,14 @@ const Sidebar = ({
                 <div 
                   className="layer-color" 
                   style={{ backgroundColor: layer.color }}
-                />
-                <span>{layer.name}</span>
+                  
+                />  
+                <span className ="layer-name">{layer.name}</span>
+                <button
+                  className='style-btn'
+                  onClick={() => setEditingLayerId(layer.id)}
+                  title ="Edit Layer Style"
+                  >Edit</button>
               </div>
             ))
           )}
@@ -150,6 +142,7 @@ const Sidebar = ({
         <p className="info-text">Upload a complete shapefile set (.shp, .shx, .dbf) to view geographic data.</p>
         <p className="info-text">Click on features to see their attributes.</p>
       </div>
+
     </div>
   );
 };
