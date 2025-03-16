@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import axios from 'axios';
-
+const APIBASE_URL = process.env.API_BASE_URL;
 const GeoAICommandWindow = ({ layers, onCommandResult }) => {
   const [query, setQuery] = useState('');
   const [history, setHistory] = useState([]);
@@ -26,7 +26,7 @@ const GeoAICommandWindow = ({ layers, onCommandResult }) => {
     
     try {
       // Send query to backend
-      const response = await axios.post('http://127.0.0.1:8000/process-gis-query', {
+      const response = await axios.post(`${APIBASE_URL}/process-gis-query`, {
         query,
         context: {
           layers: layers.map(layer => ({
